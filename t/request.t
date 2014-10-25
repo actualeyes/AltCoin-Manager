@@ -13,7 +13,8 @@
 
 use Test::More qw( no_plan );
 BEGIN { use_ok( AltCoin::Manager ); }
-use Scalar::Util qw(looks_like_number);
+use JSON;
+
 #########################
 
 # Insert your test code below, the Test::More module is used here so read
@@ -21,16 +22,30 @@ use Scalar::Util qw(looks_like_number);
 
 my $altcoin_obj = AltCoin::Manager->new();
 
-my $btc_market_data = $altcoin_obj->get_market_data({ symbol => 'btc'});
+my $btc_price = $altcoin_obj->get_current_price({ symbol => 'btc'});
 
-is($btc_market_data->{success}, 1,"Successfully pulled data");
-
-
-my $btc_price = $btc_market_data->{current_price};
-ok(looks_like_number($btc_price), "current btc price is a number");
-my $drk_market_data = $altcoin_obj->get_market_data({symbol => 'drk'});
-
-$drk_price = $drk_market_data->{current_price};
-ok(looks_like_number($drk_price), "current drk price is a number");
+my $test_btc_price = get_altcoin_price('btc');
+is($btc_price, $test_btc_price, "library and test btc price match");
 
 
+my $drk_price= $altcoin_obj->get_current_price({symbol => 'drk'});
+my $test_drk_price = get_altcoin_price('drk');
+is($drk_price, $test_drk_price, "library and test drk price match");
+
+
+
+sub get_altcoin_price {
+    my ($symbol) = shift;
+    
+    my $market_id = $altcoin_obj->get_cryptsy_market_id($symbol);
+    
+    my $ua = LWP::UserAgent->new;
+    $ua->timeout(10);
+    
+    my $response = $ua->get("http://pubapi1.cryptsy.com/api.php?method=singlemarketdata&marketid=$market_id");
+    my $json = JSON->new->allow_nonref;
+    
+    my $market_data = $json->decode($response->decoded_content);
+    
+    return $market_data->{return}->{markets}->{uc($symbol)}->{lasttradeprice};
+}     

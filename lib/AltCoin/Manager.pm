@@ -6,7 +6,7 @@ use namespace::autoclean;
 
 use LWP::UserAgent;
 use JSON;
-
+use WebService::Cryptsy;
 
 has 'json' => (
     is => 'ro',
@@ -45,27 +45,29 @@ sub get_address_balance {
     
 }
 
-sub get_market_data {
-    my ($self, $args) = @_;
+sub get_cryptsy_market_id {
+    my ($self, $symbol) = @_;
     
-    my $symbol = $args->{symbol};
     my $market_ids = $self->cryptsy_market_ids();
     my $market_id = $market_ids->{$symbol};
+
+    return $market_id;
     
-    my $ua = LWP::UserAgent->new;
-    $ua->timeout(10);
-    
-    my $response = $ua->get("http://pubapi1.cryptsy.com/api.php?method=singlemarketdata&marketid=$market_id");
-    my $market_data = $self->json->decode($response->decoded_content);
-    
-    my $current_market_data = {
-        success       => $market_data->{success},
-        current_price => $market_data->{return}->{markets}->{uc($symbol)}->{lasttradeprice},
-    };
-    
-    return $current_market_data;
-        
-}     
+}
+
+sub get_current_price {
+    my ($self, $args) = @_;
+
+    my $symbol = $args->{symbol};
+    my $market_id = $self->get_cryptsy_market_id($symbol);
+
+    my $crypt = WebService::Cryptsy->new;
+    my $market_data = $crypt->singlemarketdata( $market_id )
+        or die "Error: $crypt";
+
+    return $market_data->{markets}->{uc($symbol)}->{lasttradeprice};
+}
+
 
 __PACKAGE__->meta->make_immutable;
 
