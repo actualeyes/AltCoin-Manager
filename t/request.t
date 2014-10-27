@@ -14,13 +14,14 @@
 use Test::More qw( no_plan );
 BEGIN { use_ok( AltCoin::Manager ); }
 use JSON;
-
+use LWP::UserAgent;
 #########################
 
 # Insert your test code below, the Test::More module is used here so read
 # its man page ( perldoc Test::More ) for help writing this test script.
 
 my $altcoin_obj = AltCoin::Manager->new();
+my $balance_urls = $altcoin_obj->balance_urls;
 
 my $btc_price = $altcoin_obj->get_current_price({ symbol => 'btc'});
 
@@ -32,7 +33,21 @@ my $drk_price= $altcoin_obj->get_current_price({symbol => 'drk'});
 my $test_drk_price = get_altcoin_price('drk');
 is($drk_price, $test_drk_price, "library and test drk price match");
 
+my $doge_address = "DGyiBd4UtcYB69dW1hL5TrySMUyPg1KSkg";
 
+print "Making doge api call with library\n";
+
+my $doge_balance = $altcoin_obj->get_address_balance({
+    address => $doge_address,
+    symbol  => "doge",
+});
+
+my $doge_test_balance = get_test_balance({
+    address => $doge_address,
+    symbol  => 'doge', 
+});
+
+is($doge_balance, $doge_test_balance, "Proper doge balance pulled");
 
 sub get_altcoin_price {
     my ($symbol) = shift;
@@ -41,6 +56,7 @@ sub get_altcoin_price {
     
     my $ua = LWP::UserAgent->new;
     $ua->timeout(10);
+    print "Making $symbol altcoin price api call\n";
     
     my $response = $ua->get("http://pubapi1.cryptsy.com/api.php?method=singlemarketdata&marketid=$market_id");
     my $json = JSON->new->allow_nonref;
@@ -49,3 +65,22 @@ sub get_altcoin_price {
     
     return $market_data->{return}->{markets}->{uc($symbol)}->{lasttradeprice};
 }     
+
+
+sub get_test_balance {
+    my ($args) = @_;
+
+    my $symbol = $args->{symbol};
+    my $address = $args->{address};
+    
+        
+    my $url = $balance_urls->{$symbol};
+    my $ua = LWP::UserAgent->new;
+    $ua->timeout(25);
+    print "making indepedent $symbol api call for test\n";
+    
+    my $response = $ua->get($url.$address);
+
+    return $response->content;
+
+}

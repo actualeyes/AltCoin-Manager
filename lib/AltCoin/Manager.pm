@@ -30,16 +30,30 @@ has 'cryptsy_market_ids' => (
     }
 );
 
+has 'balance_urls' => (
+    is   => 'ro',
+    isa  => 'HashRef[Str]',
+    default => sub {
+        {
+            doge => "https://dogechain.info/chain/Dogecoin/q/addressbalance/",
+            drk  => "http://chainz.cryptoid.info/drk/api.dws?q=getbalance&a=",
+            
+        };
+    }
+);
+
+    
 sub get_address_balance {
-    my ($self) = @_;
+    my ($self, $args) = @_;
+    
+    my $address = $args->{address};
+    my $symbol  = $args->{symbol};
     
     my $ua = LWP::UserAgent->new;
-    $ua->timeout(10);
+    $ua->timeout(25);
+    my $url = $self->get_balance_url($symbol);
     
-    my $dogecoin_url = "https://dogechain.info/chain/Dogecoin/q/addressbalance";
-    my $darkcoin_url =  "http://chainz.cryptoid.info/drk/api.dws?q=getbalance&a=";
-    my $address = "XsBKcHceTzdKVuzqcnzHbHbKCPq2cWwmAS";
-    my $response = $ua->get($darkcoin_url.$address);
+    my $response = $ua->get($url.$address);
 
     return $response->content;
     
@@ -68,6 +82,13 @@ sub get_current_price {
     return $market_data->{markets}->{uc($symbol)}->{lasttradeprice};
 }
 
+sub get_balance_url {
+    my ($self, $symbol) = @_;
+    
+    my $urls = $self->balance_urls();
+
+    return $urls->{$symbol};
+}
 
 __PACKAGE__->meta->make_immutable;
 
