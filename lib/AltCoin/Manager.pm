@@ -30,6 +30,15 @@ has 'cryptsy_market_ids' => (
     }
 );
 
+has 'current_btc_price' => (
+    is  => 'ro',
+    isa => 'Num',
+    default => sub {
+        my ($self) = @_;
+        return $self->get_current_price({ symbol => 'btc'});
+    }
+);
+
 has 'balance_urls' => (
     is   => 'ro',
     isa  => 'HashRef[Str]',
@@ -89,6 +98,16 @@ sub get_balance_url {
 
     return $urls->{$symbol};
 }
+
+sub convert_to_dollars {
+    my ($self, $balance_in_btc) = @_;
+
+    my $dollars_per_btc = $self->get_current_price({ symbol => 'btc' });
+
+    return ($balance_in_btc * $dollars_per_btc );
+}
+
+
 
 __PACKAGE__->meta->make_immutable;
 

@@ -49,6 +49,14 @@ my $doge_test_balance = get_test_balance({
 
 is($doge_balance, $doge_test_balance, "Proper doge balance pulled");
 
+my $doge_dollar_value = $altcoin_obj->convert_to_dollars($doge_balance);
+
+my $doge_dollar_value_test = ($btc_price * $doge_balance);
+
+is($doge_dollar_value, $doge_dollar_value_test, "$dollar conversion works properly");
+
+
+
 sub get_altcoin_price {
     my ($symbol) = shift;
     
