@@ -95,16 +95,20 @@ sub get_balance_url {
     my ($self, $symbol) = @_;
     
     my $urls = $self->balance_urls();
+    if (exists $urls->{$symbol}) {
+        return $urls->{$symbol};
+    } else {
+        die "$symbol doesn't exist or is not supported\n";
+    }
 
-    return $urls->{$symbol};
 }
 
-sub convert_to_dollars {
+sub convert_to_usd {
     my ($self, $balance_in_btc) = @_;
 
-    my $dollars_per_btc = $self->get_current_price({ symbol => 'btc' });
+    my $usd_per_btc = $self->get_current_price({ symbol => 'btc' });
 
-    return ($balance_in_btc * $dollars_per_btc );
+    return ($balance_in_btc * $usd_per_btc );
 }
 
 

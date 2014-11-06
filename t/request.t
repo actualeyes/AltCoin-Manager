@@ -23,6 +23,7 @@ use LWP::UserAgent;
 my $altcoin_obj = AltCoin::Manager->new();
 my $balance_urls = $altcoin_obj->balance_urls;
 
+# Price testing
 my $btc_price = $altcoin_obj->get_current_price({ symbol => 'btc'});
 
 my $test_btc_price = get_altcoin_price('btc');
@@ -33,6 +34,8 @@ my $drk_price= $altcoin_obj->get_current_price({symbol => 'drk'});
 my $test_drk_price = get_altcoin_price('drk');
 is($drk_price, $test_drk_price, "library and test drk price match");
 
+
+# Test for doge account balance. 
 my $doge_address = "DGyiBd4UtcYB69dW1hL5TrySMUyPg1KSkg";
 
 print "Making doge api call with library\n";
@@ -49,11 +52,10 @@ my $doge_test_balance = get_test_balance({
 
 is($doge_balance, $doge_test_balance, "Proper doge balance pulled");
 
-my $doge_dollar_value = $altcoin_obj->convert_to_dollars($doge_balance);
-
-my $doge_dollar_value_test = ($btc_price * $doge_balance);
-
-is($doge_dollar_value, $doge_dollar_value_test, "$dollar conversion works properly");
+# Test converting doge to dollars 
+my $doge_usd_value = $altcoin_obj->convert_to_usd($doge_balance);
+my $doge_usd_value_test = ($btc_price * $doge_balance);
+is($doge_usd_value, $doge_usd_value_test, "doge to usd conversion works properly");
 
 
 
