@@ -7,6 +7,7 @@ use namespace::autoclean;
 use LWP::UserAgent;
 use JSON;
 use WebService::Cryptsy;
+use Scalar::Util qw(looks_like_number);
 
 has 'json' => (
     is => 'ro',
@@ -26,6 +27,7 @@ has 'cryptsy_market_ids' => (
             doge => 132,
             xst  => 285,
             ltcd => 294,
+            silk => 225,
         };
     }
 );
@@ -46,7 +48,8 @@ has 'balance_urls' => (
         {
             doge => "https://dogechain.info/chain/Dogecoin/q/addressbalance/",
             drk  => "http://chainz.cryptoid.info/drk/api.dws?q=getbalance&a=",
-            
+            ltcd => "http://chainz.cryptoid.info/ltcd/api.dws?q=getbalance&a=",
+            silk => "http://explorer.silkcoin.io/chain/Silkcoin/q/addressbalance/",
         };
     }
 );
@@ -60,11 +63,15 @@ sub get_address_balance {
     
     my $ua = LWP::UserAgent->new;
     $ua->timeout(25);
-    my $url = $self->get_balance_url($symbol);
+    $ua->agent("altcoin-manager");
     
-    my $response = $ua->get($url.$address);
-
-    return $response->content;
+    my $url = $self->get_balance_url($symbol);
+    if ($url) {
+        my $response = $ua->get($url.$address);
+        return $response->content;
+    } else {
+        return '';
+    }
     
 }
 
@@ -85,10 +92,16 @@ sub get_current_price {
     my $market_id = $self->get_cryptsy_market_id($symbol);
 
     my $crypt = WebService::Cryptsy->new;
-    my $market_data = $crypt->singlemarketdata( $market_id )
-        or die "Error: $crypt";
+    my $market_data = $crypt->singlemarketdata( $market_id );
+    
+    if (ref($market_data) eq 'HASH' ) {
+        my $price =  $market_data->{markets}->{uc($symbol)}->{lasttradeprice};
 
-    return $market_data->{markets}->{uc($symbol)}->{lasttradeprice};
+        return looks_like_number($price) ? $price : 0
+    } else {
+        return '';
+    }
+    
 }
 
 sub get_balance_url {
@@ -98,19 +111,18 @@ sub get_balance_url {
     if (exists $urls->{$symbol}) {
         return $urls->{$symbol};
     } else {
-        die "$symbol doesn't exist or is not supported\n";
+        return '';
     }
 
 }
 
 sub convert_to_usd {
     my ($self, $balance_in_btc) = @_;
-
+    
     my $usd_per_btc = $self->get_current_price({ symbol => 'btc' });
-
+    
     return ($balance_in_btc * $usd_per_btc );
 }
-
 
 
 __PACKAGE__->meta->make_immutable;
